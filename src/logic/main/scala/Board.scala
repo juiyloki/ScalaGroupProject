@@ -65,7 +65,7 @@ class Board(private val N: Int, private val board: Vector[Vector[Square]]) {
       // Convert the row of Squares into a row of Strings ("?" or number)
       val rowStrings = row.map { square =>
         if (square.getVisibility) square.getValue.toString
-        else "?"
+        else "_"
       }
 
       // Group the strings by boxSize (e.g., 3), join inner group with " ",

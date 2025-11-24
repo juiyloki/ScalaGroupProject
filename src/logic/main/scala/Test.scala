@@ -42,6 +42,18 @@ class Test {
           println("----------------------------------\n")
       }
     }
+
+    println(s"--- 🧩 Generating Puzzle with very easy difficulty ---")
+    val maker2  = new SudokuMaker(difficulty = 1, N = 9) // 1–easy, 3–medium, 5–hard
+    val puzzle = maker2.generatePuzzle()
+    puzzle.printBoard()
+    println("----------------------------------\n")
+
+    println(s"--- 🧩 Generating Puzzle with very hard difficulty ---")
+    val maker3  = new SudokuMaker(difficulty = 5, N = 9) // 1–easy, 3–medium, 5–hard
+    val puzzle3 = maker3.generatePuzzle()
+    puzzle3.printBoard()
+    println("----------------------------------\n")
   }
 
 }

@@ -5,6 +5,23 @@ class SudokuMaker(private val difficulty: Int, private val N: Int) {
 
   private val solver = new SudokuSolver
 
+  /** Map difficulty to the number of empty spaces */
+  private def emptySquaresForDifficulty: Int = difficulty match {
+    case 1 => 10  // very easy
+    case 2 => 25  // easy
+    case 3 => 35  // medium
+    case 4 => 45  // hard
+    case 5 => 55  // very hard
+    case _ => 35  // default medium
+  }
+
+  /** Generates board, subtracts toRemove numbers accoring to set difficulty */
+  def generatePuzzle(): Board = {
+    val fullBoard = randomValidBoardGenerator()
+    val toRemove  = emptySquaresForDifficulty
+    squareRemover(fullBoard, toRemove)
+  }
+
   /**
    * Generates a completely filled, valid Sudoku board.
    */

@@ -78,5 +78,25 @@ class Board(private val N: Int, private val board: Vector[Vector[Square]]) {
       println(rowString)
     }
   }
-  
+
+  /** Returns true if the square at (row, col) was part of the puzzle (hidden). */
+  def isHidden(row: Int, col: Int): Boolean =
+    !board(row)(col).getVisibility
+
+  /** Updates the value at (row, col) and marks the square as visible. */
+  def setUserValue(value: Int, row: Int, col: Int): Board = {
+    val shown = board(row)(col).changeValue(value).show
+    changeSquare(row, col, shown)
+  }
+
+  /** Reveals all squares and returns a fully visible board. */
+  def revealAll(): Board = {
+    val newBoard = board.zipWithIndex.map {
+      case (row, r) =>
+        row.zipWithIndex.map {
+          case (sq, c) => sq.show
+        }
+    }
+    new Board(N, newBoard)
+  }
 }

@@ -1,3 +1,5 @@
+package logic
+
 class Board(private val N: Int, private val board: Vector[Vector[Square]]) {
 
   def this(N: Int) = {

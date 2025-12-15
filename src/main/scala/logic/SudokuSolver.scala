@@ -1,3 +1,5 @@
+package logic
+
 import scala.util.Random // Import for shuffling
 
 class SudokuSolver {

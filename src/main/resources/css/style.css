@@ -1,0 +1,11 @@
+.btn-red {
+    -fx-text-fill: red;
+}
+
+.btn-blue {
+    -fx-text-fill: blue;
+}
+
+.btn-selected {
+    -fx-background-color: lightblue;
+}

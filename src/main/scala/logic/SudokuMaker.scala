@@ -1,3 +1,5 @@
+package logic
+
 import scala.util.Random
 import scala.annotation.tailrec
 

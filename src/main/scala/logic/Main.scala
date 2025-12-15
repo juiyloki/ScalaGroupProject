@@ -1,3 +1,5 @@
+package logic
+
 import scala.io.StdIn
 object Main {
 

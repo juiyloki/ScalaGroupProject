@@ -70,3 +70,11 @@
 .key:hover {
     -fx-background-color: #f1f5f9;
 }
+
+.hint {
+    -fx-background-color: #fff7cc;
+    -fx-border-color: #e9d27a;
+}
+.hint:hover {
+    -fx-background-color: #ffefad;
+}

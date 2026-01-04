@@ -25,8 +25,7 @@ case class CellPos(x: Int, y: Int)
 // Class for buttons inside the grid
 class CellButton(val pos: CellPos, initial: Int) extends Button {
   // Only buttons that are not given an initial value are mutable
-  val isMutable: Boolean = initial == 0
-
+  var isMutable: Boolean = initial == 0
 
   def setValue(value: Int): Unit =
     setText(if (value == 0) "" else value.toString)
@@ -103,6 +102,33 @@ class SudokuApp extends Application {
 
   private def stopTimer(): Unit = {
     if (timeline != null) timeline.stop()
+  }
+
+  private def giveHint(): Unit = {
+    val emptyCells = cells.filter { c =>
+      val txt = c.getText
+      (txt == null || txt.isEmpty)
+    }
+
+    if (emptyCells.isEmpty) return
+
+    val chosen = emptyCells(scala.util.Random.nextInt(emptyCells.length))
+    val CellPos(x, y) = chosen.pos
+
+    val correctValue = gameState.fullBoard.getSquare(x, y)
+
+    chosen.setValue(correctValue)
+    chosen.getStyleClass.removeAll("btn-red", "btn-blue")
+    chosen.getStyleClass.add("btn-blue")
+
+    chosen.isMutable = false
+    if (!chosen.getStyleClass.contains("cell-given")) {
+      chosen.getStyleClass.add("cell-given")
+    }
+
+    gameState.board = gameState.board.changeValue(correctValue, x, y)
+    highlightSameNumbers(correctValue)
+    checkForWin()
   }
 
   // Value inputed by user are blue if they are valid, red otherwise
@@ -254,6 +280,11 @@ class SudokuApp extends Application {
     eraseButton.getStyleClass.add("key")
     eraseButton.setOnAction(_ => trySetValue(0))
     numButtons.add(eraseButton, 9, 0)
+
+    val hintButton = new Button("Hint")
+    hintButton.getStyleClass.addAll("key", "hint")
+    hintButton.setOnAction(_ => giveHint())
+    numButtons.add(hintButton, 10, 0)
 
     timerLabel = new Label("00:00")
     timerLabel.getStyleClass.add("timer")

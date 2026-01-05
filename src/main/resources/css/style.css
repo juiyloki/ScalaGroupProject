@@ -49,8 +49,18 @@
     -fx-text-fill: #111;
 }
 
-.btn-selected {
+.cell-line-empty {
+    -fx-background-color: #eef6ff;
+    -fx-background: #eef6ff;
+}
+
+.cell-line-filled {
     -fx-background-color: #dbeafe;
+    -fx-background: #dbeafe;
+}
+
+.btn-selected {
+    -fx-background-color: #fef4d7;
 }
 
 .btn-red  { -fx-text-fill: #dc2626; }
@@ -77,4 +87,55 @@
 }
 .hint:hover {
     -fx-background-color: #ffefad;
+}
+
+.completed-group {
+    -fx-background-color: #c8f7c5;
+    -fx-background: #c8f7c5;
+}
+
+.menu-title {
+    -fx-font-size: 34px;
+    -fx-font-weight: 900;
+    -fx-text-fill: #1f2937;
+}
+
+.menu-subtitle {
+    -fx-font-size: 16px;
+    -fx-font-weight: 700;
+    -fx-text-fill: #334155;
+}
+
+.menu-difficulty {
+    -fx-padding: 12;
+    -fx-background-color: rgba(255,255,255,0.6);
+    -fx-background-radius: 12;
+}
+
+.menu-radio {
+    -fx-font-size: 14px;
+    -fx-font-weight: 600;
+}
+
+.menu-button {
+    -fx-font-size: 14px;
+    -fx-font-weight: 800;
+}
+
+.rules-text {
+    -fx-font-size: 14px;
+    -fx-text-fill: #334155;
+    -fx-padding: 14;
+    -fx-background-color: rgba(255,255,255,0.6);
+    -fx-background-radius: 12;
+    -fx-max-width: 520;
+}
+
+.victory-time {
+    -fx-font-size: 18px;
+    -fx-font-weight: 800;
+    -fx-text-fill: #1f2937;
+    -fx-padding: 10 16 10 16;
+    -fx-background-color: rgba(255,255,255,0.6);
+    -fx-background-radius: 12;
 }

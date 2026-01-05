@@ -4,8 +4,6 @@ import javafx.scene.Scene
 import javafx.scene.control.*
 import javafx.stage.Stage
 import javafx.geometry.Insets
-import javafx.scene.control.Alert
-import javafx.scene.control.Alert.AlertType
 import javafx.application.Platform
 import javafx.animation.{Animation, KeyFrame, Timeline}
 import javafx.util.Duration
@@ -54,29 +52,7 @@ class SudokuApp extends Application {
   private var elapsedSeconds: Int = 0
   private var timerLabel: Label = _
   private var timeline: Timeline = _
-
-  private def askDifficulty(): Int = {
-    val choices = Map(
-      "Very Easy (1)" -> 1,
-      "Easy (2)" -> 2,
-      "Medium (3)" -> 3,
-      "Hard (4)" -> 4,
-      "Very Hard (5)" -> 5
-    )
-
-    val orderedChoices = choices.keys.toSeq.sortBy(choices)
-    val dialog = new ChoiceDialog[String]("Medium (3)", orderedChoices: _*)
-    dialog.setTitle("Sudoku")
-    dialog.setHeaderText("Choose difficulty")
-    dialog.setContentText("Difficulty level:")
-    val result = dialog.showAndWait()
-    if (result.isPresent) {
-      choices(result.get())
-    } else {
-      Platform.exit()
-      0
-    }
-  }
+  private var selectedDifficulty: Int = 3
 
   private def formatTime(totalSeconds: Int): String = {
     val minutes = totalSeconds / 60
@@ -127,6 +103,16 @@ class SudokuApp extends Application {
     }
 
     gameState.board = gameState.board.changeValue(correctValue, x, y)
+
+    val rowGroup = rowCells(x)
+    if (isComplete(rowGroup)) flashCompleted(rowGroup)
+
+    val colGroup = colCells(y)
+    if (isComplete(colGroup)) flashCompleted(colGroup)
+
+    val blockGroup = blockCells(x, y)
+    if (isComplete(blockGroup)) flashCompleted(blockGroup)
+
     highlightSameNumbers(correctValue)
     checkForWin()
   }
@@ -142,11 +128,23 @@ class SudokuApp extends Application {
       if (btn.isMutable) {
         val CellPos(x, y) = btn.pos
 
-        val isMoveValid = solver.isValid(gameState.board, x, y, value)
+        val current = gameState.board.getSquare(x, y)
+        val isMoveValid =
+          (value == 0) || (value == current) || solver.isValid(gameState.board, x, y, value)
 
         setButtonTextColor(btn, isMoveValid)
         btn.setValue(value)
         gameState.board = gameState.board.changeValue(value, x, y)
+
+        // Highlighting when row/column/group complete
+        val rowGroup = rowCells(x)
+        if (isComplete(rowGroup)) flashCompleted(rowGroup)
+
+        val colGroup = colCells(y)
+        if (isComplete(colGroup)) flashCompleted(colGroup)
+
+        val blockGroup = blockCells(x, y)
+        if (isComplete(blockGroup)) flashCompleted(blockGroup)
 
         checkForWin()
         // reset highlight for current cell
@@ -158,31 +156,62 @@ class SudokuApp extends Application {
       }
     }
 
-  private def checkForWin() :Unit= {
+  private def cellAt(row: Int, col: Int): CellButton =
+    cells.find(_.pos == CellPos(row, col)).get
+
+  private def rowCells(row: Int): Vector[CellButton] =
+    (0 until 9).map(col => cellAt(row, col)).toVector
+
+  private def colCells(col: Int): Vector[CellButton] =
+    (0 until 9).map(row => cellAt(row, col)).toVector
+
+  private def blockCells(row: Int, col: Int): Vector[CellButton] = {
+    val r0 = (row / 3) * 3
+    val c0 = (col / 3) * 3
+    (for {
+      r <- r0 until (r0 + 3)
+      c <- c0 until (c0 + 3)
+    } yield cellAt(r, c)).toVector
+  }
+
+  private def isComplete(group: Vector[CellButton]): Boolean = {
+    val values = group.map { c =>
+      val t = c.getText
+      if (t == null || t.isEmpty) 0 else t.toInt
+    }
+    if (values.contains(0)) return false
+    values.toSet == (1 to 9).toSet
+  }
+
+  private def flashCompleted(group: Vector[CellButton]): Unit = {
+    group.foreach(_.getStyleClass.add("completed-group"))
+    val t = new javafx.animation.PauseTransition(javafx.util.Duration.millis(400))
+    t.setOnFinished(_ => group.foreach(_.getStyleClass.remove("completed-group")))
+    t.play()
+  }
+
+  private def highlightLine(row: Int, col: Int): Unit = {
+    cells.foreach { c =>
+      c.getStyleClass.removeAll("cell-line-empty", "cell-line-filled")
+    }
+
+    cells.foreach { c =>
+      val CellPos(r, ccol) = c.pos
+      if (r == row || ccol == col) {
+        val txt = c.getText
+        val isEmpty = (txt == null || txt.isEmpty)
+
+        if (isEmpty) c.getStyleClass.add("cell-line-empty")
+        else c.getStyleClass.add("cell-line-filled")
+      }
+    }
+  }
+
+  private def checkForWin(): Unit = {
     if (gameState.board.isValueEqual(gameState.fullBoard)) {
-      showWinDialog()
+      stopTimer()
+      primaryStage.setScene(createVictoryScene(elapsedSeconds))
     }
-  }
-
-  private def showWinDialog(): Unit = {
-    stopTimer()
-    val alert = new Alert(AlertType.CONFIRMATION)
-    alert.setHeaderText("Congratulations, you win.")
-    alert.setContentText(s"You solved it in ${formatTime(elapsedSeconds)}.\nPlay again?")
-    alert.getButtonTypes.setAll(
-      javafx.scene.control.ButtonType.YES,
-      javafx.scene.control.ButtonType.NO
-    )
-    val result = alert.showAndWait()
-    if (result.isPresent && result.get == javafx.scene.control.ButtonType.YES) {
-      restartGame()
-    }
-  }
-
-  private def restartGame(): Unit = {
-    val difficulty = askDifficulty()
-    gameState = new GameState(difficulty)
-    primaryStage.setScene(createGameScene())
   }
 
   private def selectButton(button: CellButton): Unit = {
@@ -260,12 +289,15 @@ class SudokuApp extends Application {
 
       cell.setOnAction(_ => {
         selectButton(cell)
+        highlightLine(cell.pos.x, cell.pos.y)
+
         val value = cell.getText match {
           case null | "" => 0
           case s => s.toInt
         }
         highlightSameNumbers(value)
       })
+
       boardFX.add(cell, j, i)
     }
 
@@ -286,6 +318,14 @@ class SudokuApp extends Application {
     hintButton.setOnAction(_ => giveHint())
     numButtons.add(hintButton, 10, 0)
 
+    val menuButton = new Button("Menu")
+    menuButton.getStyleClass.add("key")
+    menuButton.setOnAction(_ => {
+      stopTimer()
+      primaryStage.setScene(createMenuScene())
+    })
+    numButtons.add(menuButton, 0, 1, 11, 1)
+
     timerLabel = new Label("00:00")
     timerLabel.getStyleClass.add("timer")
     val topBar = new HBox(timerLabel)
@@ -294,7 +334,7 @@ class SudokuApp extends Application {
     val root = new VBox(10, topBar, boardFX, numButtons)
     root.setPadding(new Insets(20))
 
-    val scene = new Scene(root, 500, 500)
+    val scene = new Scene(root, 600, 650)
     scene.getStylesheets.add(
       getClass.getResource("/css/style.css").toExternalForm
     )
@@ -302,12 +342,129 @@ class SudokuApp extends Application {
     scene
   }
 
+  private def createMenuScene(): Scene = {
+    val title = new Label("Sudoku")
+    title.getStyleClass.add("menu-title")
+
+    val subtitle = new Label("Choose difficulty:")
+    subtitle.getStyleClass.add("menu-subtitle")
+    val tg = new javafx.scene.control.ToggleGroup()
+
+    def mkRadio(text: String, value: Int): RadioButton = {
+      val rb = new RadioButton(text)
+      rb.setToggleGroup(tg)
+      rb.getStyleClass.add("menu-radio")
+      rb.setOnAction(_ => selectedDifficulty = value)
+      rb
+    }
+
+    val veryEasy = mkRadio("Very Easy", 1)
+    val easy = mkRadio("Easy", 2)
+    val medium = mkRadio("Medium", 3)
+    val hard = mkRadio("Hard", 4)
+    val veryHard = mkRadio("Very Hard", 5)
+
+    medium.setSelected(true)
+    val difficultyBox = new VBox(8, veryEasy, easy, medium, hard, veryHard)
+    difficultyBox.getStyleClass.add("menu-difficulty")
+
+    val playBtn = new Button("Play")
+    playBtn.getStyleClass.addAll("key", "menu-button")
+    playBtn.setPrefWidth(200)
+    playBtn.setOnAction(_ => {
+      gameState = new GameState(selectedDifficulty)
+      primaryStage.setScene(createGameScene())
+    })
+
+    val rulesBtn = new Button("Rules")
+    rulesBtn.getStyleClass.addAll("key", "menu-button")
+    rulesBtn.setPrefWidth(200)
+    rulesBtn.setOnAction(_ => {
+      primaryStage.setScene(createRulesScene())
+    })
+
+    val buttons = new HBox(12, playBtn, rulesBtn)
+    buttons.setAlignment(Pos.CENTER)
+
+    val root = new VBox(18, title, subtitle, difficultyBox, buttons)
+    root.setPadding(new Insets(30))
+    root.setAlignment(Pos.CENTER)
+
+    val scene = new Scene(root, 600, 650)
+    scene.getStylesheets.add(getClass.getResource("/css/style.css").toExternalForm)
+    scene
+  }
+
+  private def createRulesScene(): Scene = {
+    val title = new Label("Rules")
+    title.getStyleClass.add("menu-title")
+
+    val rulesText = new Label(
+      "• Fill the grid so that every row and every column contains digits 1–9 without repetitions.\n" +
+        "• Every 3×3 block must contain digits 1–9 without repetitions.\n" +
+        "• Each puzzle has one unique solution.\n\n" +
+        "• You cannot change the given (gray) numbers.\n" +
+        "• Use Hint to fill one cell (if available).\n" +
+        "• X removes a number from the selected cell."
+    )
+    rulesText.getStyleClass.add("rules-text")
+    rulesText.setWrapText(true)
+
+    val backBtn = new Button("Back")
+    backBtn.getStyleClass.addAll("key", "menu-button")
+    backBtn.setPrefWidth(200)
+    backBtn.setOnAction(_ => primaryStage.setScene(createMenuScene()))
+
+    val root = new VBox(18, title, rulesText, backBtn)
+    root.setPadding(new Insets(30))
+    root.setAlignment(Pos.CENTER)
+
+    val scene = new Scene(root, 600, 650)
+    scene.getStylesheets.add(getClass.getResource("/css/style.css").toExternalForm)
+    scene
+  }
+
+  private def createVictoryScene(timeSeconds: Int): Scene = {
+    val title = new Label("You won!")
+    title.getStyleClass.add("menu-title")
+
+    val timeLbl = new Label(s"Time: ${formatTime(timeSeconds)}")
+    timeLbl.getStyleClass.add("victory-time")
+
+    val playAgainBtn = new Button("Play again")
+    playAgainBtn.getStyleClass.addAll("key", "menu-button")
+    playAgainBtn.setPrefWidth(200)
+    playAgainBtn.setOnAction(_ => {
+      gameState = new GameState(selectedDifficulty) // same difficulty
+      primaryStage.setScene(createGameScene())
+    })
+
+    val menuBtn = new Button("Menu")
+    menuBtn.getStyleClass.addAll("key", "menu-button")
+    menuBtn.setPrefWidth(200)
+    menuBtn.setOnAction(_ => primaryStage.setScene(createMenuScene()))
+
+    val exitBtn = new Button("Exit")
+    exitBtn.getStyleClass.addAll("key", "menu-button")
+    exitBtn.setPrefWidth(200)
+    exitBtn.setOnAction(_ => Platform.exit())
+
+    val buttons = new HBox(12, playAgainBtn, menuBtn, exitBtn)
+    buttons.setAlignment(Pos.CENTER)
+
+    val root = new VBox(18, title, timeLbl, buttons)
+    root.setPadding(new Insets(30))
+    root.setAlignment(Pos.CENTER)
+
+    val scene = new Scene(root, 600, 650)
+    scene.getStylesheets.add(getClass.getResource("/css/style.css").toExternalForm)
+    scene
+  }
+
   override def start(stage: Stage): Unit = {
     primaryStage = stage
-    gameState = new GameState(askDifficulty())
-
-    stage.setScene(createGameScene())
     stage.setTitle("Sudoku")
+    stage.setScene(createMenuScene())
     stage.show()
   }
 }

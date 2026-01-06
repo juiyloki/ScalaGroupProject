@@ -23,14 +23,29 @@ It provides a smooth and user-friendly gameplay experience with multiple quality
 - Menu screen with difficulty selection
 - Rules tab explaining how to play
 - Timer showing how long the game takes
+- Lives system, that limits user mistakes and ends the game if it is exceeded
 - **X button** for removing previously written numbers
 - **Hint button** that fills in a valid number
+- Undo button to revert previous moves
 - Highlighting of:
   - all identical digits when one is selected
   - row and column of the selected cell
   - completed row / column / 3×3 box (green highlight)
 - Red color for invalid moves
 - Winning screen with completion time
+
+---
+
+## Controls
+
+- **Mouse**: Click cells to select, click on-screen keypad to enter numbers.
+- **Keyboard**:
+  - `Arrow Keys`: Move selection.
+  - `1-9`: Enter number.
+  - `0`, `Backspace`, `Delete`: Clear cell.
+  - `Ctrl + Z`: Undo last move.
+  - `H`: Use a hint.
+  - `M`: Return to menu.
 
 ---
 

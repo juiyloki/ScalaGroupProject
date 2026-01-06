@@ -10,6 +10,7 @@ lazy val root = (project in file("."))
       "org.openjfx" % "javafx-base" % "25.0.1",
       "org.openjfx" % "javafx-controls" % "25.0.1",
       "org.openjfx" % "javafx-graphics" % "25.0.1",
-      "org.openjfx" % "javafx-fxml" % "25.0.1"
+      "org.openjfx" % "javafx-fxml" % "25.0.1",
+      "org.openjfx" % "javafx-media" % "25.0.1" classifier "linux"
     )
   )

@@ -15,7 +15,7 @@ import javafx.scene.input.{KeyCode, KeyEvent}
 import javafx.scene.control.Alert
 import javafx.scene.control.Alert.AlertType
 import javafx.scene.control.ButtonType
-import javafx.scene.media.{Media, MediaPlayer, MediaView}
+import javafx.scene.media.{Media, MediaPlayer}
 
 object Main {
   def main(args: Array[String]): Unit = {
@@ -29,7 +29,6 @@ object GameConfig {
   var showLives: Boolean = true
   var musicEnabled: Boolean = false
   var pinkMode: Boolean = false
-  var showVideo: Boolean = false
 }
 
 case class CellPos(x: Int, y: Int)
@@ -78,7 +77,6 @@ class SudokuApp extends Application {
   private var selectedDifficulty: Int = 3
   private var livesLabel: Label = _
   private var mediaPlayer: MediaPlayer = _
-  private var videoMediaPlayer: MediaPlayer = _
 
   private def formatTime(totalSeconds: Int): String = {
     val minutes = totalSeconds / 60
@@ -99,23 +97,6 @@ class SudokuApp extends Application {
       }
     } catch {
       case e: Exception => println(s"Error loading music: ${e.getMessage}")
-    }
-  }
-
-  private def initVideo(): Unit = {
-    try {
-      val resource = getClass.getResource("/video/focus.mp4")
-      if (resource != null) {
-        val media = new Media(resource.toExternalForm)
-        videoMediaPlayer = new MediaPlayer(media)
-        videoMediaPlayer.setCycleCount(MediaPlayer.INDEFINITE)
-        videoMediaPlayer.setMute(true)
-        if (GameConfig.showVideo) videoMediaPlayer.play()
-      } else {
-        println("Video file not found! Check src/main/resources/video/focus.mp4")
-      }
-    } catch {
-      case e: Exception => println(s"Error loading video: ${e.getMessage}")
     }
   }
 
@@ -387,32 +368,6 @@ class SudokuApp extends Application {
     cell.setStyle(s"-fx-border-color: #444; -fx-border-width: $top $right $bottom $left;")
   }
 
-  // Helper to wrap content with the side video if enabled
-  private def finalizeScene(content: javafx.scene.layout.Region): Scene = {
-    // Enforce the standard Sudoku window size for the content part
-    content.setMinWidth(600)
-    content.setMinHeight(650)
-    content.setPrefWidth(600)
-    content.setPrefHeight(650)
-
-    val root = new HBox()
-    root.getChildren.add(content)
-
-    if (GameConfig.showVideo && videoMediaPlayer != null) {
-      val mv = new MediaView(videoMediaPlayer)
-      mv.setFitHeight(650) // Match the height of the Sudoku window
-      mv.setPreserveRatio(true)
-      root.getChildren.add(mv)
-    }
-
-    val scene = new Scene(root)
-    scene.getStylesheets.add(getClass.getResource("/css/style.css").toExternalForm)
-    if (GameConfig.pinkMode) {
-      scene.getStylesheets.add(getClass.getResource("/css/pink.css").toExternalForm)
-    }
-    scene
-  }
-
   private def createGameScene(): Scene = {
     val boardFX = new GridPane()
     cells = Vector.empty
@@ -503,7 +458,13 @@ class SudokuApp extends Application {
     val root = new VBox(10, topBar, boardFX, numButtons)
     root.setPadding(new Insets(20))
 
-    val scene = finalizeScene(root)
+    val scene = new Scene(root, 600, 650)
+    scene.getStylesheets.add(
+      getClass.getResource("/css/style.css").toExternalForm
+    )
+    if (GameConfig.pinkMode) {
+      scene.getStylesheets.add(getClass.getResource("/css/pink.css").toExternalForm)
+    }
     scene.addEventFilter(KeyEvent.KEY_PRESSED, e => handleGameKeyPress(e))
     startTimer()
     scene
@@ -533,7 +494,7 @@ class SudokuApp extends Application {
     val difficultyCombo = new ComboBox[String]()
     difficultyCombo.getItems.addAll("Very Easy", "Easy", "Medium", "Hard", "Very Hard")
     difficultyCombo.setValue("Medium")
-    difficultyCombo.getStyleClass.addAll("key","menu-button")
+    difficultyCombo.getStyleClass.addAll("key","menu-button","dropdown-button")
     difficultyCombo.setPrefWidth(200)
     difficultyCombo.setOnAction(_ => selectedDifficulty = difficultyCombo.getValue match {
       case "Very Easy" => 1
@@ -580,7 +541,12 @@ class SudokuApp extends Application {
     root.setPadding(new Insets(30))
     root.setAlignment(Pos.CENTER)
 
-    val scene = finalizeScene(root)
+    val scene = new Scene(root, 600, 650)
+    scene.getStylesheets.add(getClass.getResource("/css/style.css").toExternalForm)
+    if (GameConfig.pinkMode) {
+      scene.getStylesheets.add(getClass.getResource("/css/pink.css").toExternalForm)
+    }
+    
     Platform.runLater(() => playBtn.requestFocus())
     scene
   }
@@ -609,7 +575,12 @@ class SudokuApp extends Application {
     root.setPadding(new Insets(30))
     root.setAlignment(Pos.CENTER)
 
-    return finalizeScene(root)
+    val scene = new Scene(root, 600, 650)
+    scene.getStylesheets.add(getClass.getResource("/css/style.css").toExternalForm)
+    if (GameConfig.pinkMode) {
+      scene.getStylesheets.add(getClass.getResource("/css/pink.css").toExternalForm)
+    }
+    scene
   }
 
   private def createControlsScene(): Scene = {
@@ -637,7 +608,12 @@ class SudokuApp extends Application {
     root.setPadding(new Insets(30))
     root.setAlignment(Pos.CENTER)
 
-    return finalizeScene(root)
+    val scene = new Scene(root, 600, 650)
+    scene.getStylesheets.add(getClass.getResource("/css/style.css").toExternalForm)
+    if (GameConfig.pinkMode) {
+      scene.getStylesheets.add(getClass.getResource("/css/pink.css").toExternalForm)
+    }
+    scene
   }
 
   private def createSettingsScene(): Scene = {
@@ -671,25 +647,22 @@ class SudokuApp extends Application {
         scene.getStylesheets.remove(getClass.getResource("/css/pink.css").toExternalForm)
       }
     })
-    val videoCb = createCheckbox("Enable Focus Mode", GameConfig.showVideo, v => {
-      GameConfig.showVideo = v
-      if (videoMediaPlayer != null) {
-        if (v) videoMediaPlayer.play() else videoMediaPlayer.pause()
-      }
-      // Refresh the scene to update layout (add/remove video pane)
-      primaryStage.setScene(createSettingsScene())
-    })
 
     val backBtn = new Button("Back")
     backBtn.getStyleClass.addAll("key", "menu-button")
     backBtn.setPrefWidth(200)
     backBtn.setOnAction(_ => primaryStage.setScene(createMenuScene()))
 
-    val root = new VBox(20, title, hintsCb, timerCb, livesCb, pinkCb, musicCb, videoCb, backBtn)
+    val root = new VBox(20, title, hintsCb, timerCb, livesCb, pinkCb, musicCb, backBtn)
     root.setPadding(new Insets(30))
     root.setAlignment(Pos.CENTER)
 
-    return finalizeScene(root)
+    val scene = new Scene(root, 600, 650)
+    scene.getStylesheets.add(getClass.getResource("/css/style.css").toExternalForm)
+    if (GameConfig.pinkMode) {
+      scene.getStylesheets.add(getClass.getResource("/css/pink.css").toExternalForm)
+    }
+    scene
   }
 
   private def createVictoryScene(timeSeconds: Int): Scene = {
@@ -724,14 +697,18 @@ class SudokuApp extends Application {
     root.setPadding(new Insets(30))
     root.setAlignment(Pos.CENTER)
 
-    return finalizeScene(root)
+    val scene = new Scene(root, 600, 650)
+    scene.getStylesheets.add(getClass.getResource("/css/style.css").toExternalForm)
+    if (GameConfig.pinkMode) {
+      scene.getStylesheets.add(getClass.getResource("/css/pink.css").toExternalForm)
+    }
+    scene
   }
 
   override def start(stage: Stage): Unit = {
     primaryStage = stage
     stage.setTitle("Sudoku")
     initMusic()
-    initVideo()
     stage.setScene(createMenuScene())
     stage.show()
   }
@@ -799,7 +776,12 @@ class SudokuApp extends Application {
     root.setAlignment(Pos.CENTER)
     
     // Reusing existing CSS
-    return finalizeScene(root)
+    val scene = new Scene(root, 600, 650)
+    scene.getStylesheets.add(getClass.getResource("/css/style.css").toExternalForm)
+    if (GameConfig.pinkMode) {
+      scene.getStylesheets.add(getClass.getResource("/css/pink.css").toExternalForm)
+    }
+    scene
   }
 
 }

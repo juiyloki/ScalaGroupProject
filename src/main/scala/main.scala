@@ -18,6 +18,10 @@ object Main {
   }
 }
 
+object GameConfig {
+  var pinkMode: Boolean = true
+}
+
 case class CellPos(x: Int, y: Int)
 
 // Class for buttons inside the grid
@@ -374,6 +378,9 @@ class SudokuApp extends Application {
     scene.getStylesheets.add(
       getClass.getResource("/css/style.css").toExternalForm
     )
+    if (GameConfig.pinkMode) {
+      scene.getStylesheets.add(getClass.getResource("/css/pink.css").toExternalForm)
+    }
     startTimer()
     scene
   }
@@ -428,6 +435,9 @@ class SudokuApp extends Application {
 
     val scene = new Scene(root, 600, 650)
     scene.getStylesheets.add(getClass.getResource("/css/style.css").toExternalForm)
+    if (GameConfig.pinkMode) {
+      scene.getStylesheets.add(getClass.getResource("/css/pink.css").toExternalForm)
+    }
     scene
   }
 
@@ -457,6 +467,9 @@ class SudokuApp extends Application {
 
     val scene = new Scene(root, 600, 650)
     scene.getStylesheets.add(getClass.getResource("/css/style.css").toExternalForm)
+    if (GameConfig.pinkMode) {
+      scene.getStylesheets.add(getClass.getResource("/css/pink.css").toExternalForm)
+    }
     scene
   }
 
@@ -494,6 +507,9 @@ class SudokuApp extends Application {
 
     val scene = new Scene(root, 600, 650)
     scene.getStylesheets.add(getClass.getResource("/css/style.css").toExternalForm)
+    if (GameConfig.pinkMode) {
+      scene.getStylesheets.add(getClass.getResource("/css/pink.css").toExternalForm)
+    }
     scene
   }
 
@@ -565,6 +581,9 @@ class SudokuApp extends Application {
     // Reusing existing CSS
     val scene = new Scene(root, 600, 650)
     scene.getStylesheets.add(getClass.getResource("/css/style.css").toExternalForm)
+    if (GameConfig.pinkMode) {
+      scene.getStylesheets.add(getClass.getResource("/css/pink.css").toExternalForm)
+    }
     scene
   }
 

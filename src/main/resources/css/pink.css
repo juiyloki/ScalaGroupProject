@@ -1,0 +1,48 @@
+/* Pink Mode Theme */
+.root {
+    -fx-background-color: #ffe6f2; /* Light pink background */
+}
+
+.menu-title {
+    -fx-text-fill: #d63384;
+}
+
+.menu-subtitle {
+    -fx-text-fill: #d63384;
+}
+
+.key {
+    -fx-background-color: #ffb3d9;
+    -fx-text-fill: #800040;
+    -fx-border-color: #ff80bf;
+}
+
+.key:hover {
+    -fx-background-color: #ff80bf;
+}
+
+.btn-blue {
+    -fx-text-fill: #cc0066; /* Darker pink for valid inputs */
+}
+
+.btn-selected {
+    -fx-background-color: #ffccff;
+}
+
+.cell.cell-highlight {
+    -fx-background-color: #ff99cc;
+    -fx-background: #ff99cc;
+}
+
+.cell-given {
+    -fx-background-color: #fff0f5;
+    -fx-text-fill: #444;
+}
+
+.timer {
+    -fx-text-fill: #d63384;
+}
+
+.menu-radio .radio {
+    -fx-mark-color: #d63384;
+}

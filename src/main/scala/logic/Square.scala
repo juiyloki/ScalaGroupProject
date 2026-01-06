@@ -1,3 +1,5 @@
+package logic
+
 class Square(private val value: Int, private val visibility: Boolean) {
   
   def this() = { this(0, true) }

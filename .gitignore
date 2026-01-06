@@ -1,0 +1,13 @@
+# sbt
+target/
+project/target/
+
+# IntelliJ
+.idea/
+
+# OS
+.DS_Store
+
+
+### Scala ###
+.bsp/

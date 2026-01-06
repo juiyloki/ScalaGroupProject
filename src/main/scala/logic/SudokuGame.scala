@@ -1,3 +1,5 @@
+package logic
+
 import scala.io.StdIn
 
 /** Handles a console-based Sudoku gameplay session. */

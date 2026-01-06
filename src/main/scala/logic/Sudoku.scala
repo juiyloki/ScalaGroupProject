@@ -1,3 +1,5 @@
+package logic
+
 class Sudoku {
 
   //def generate(): Board = {}

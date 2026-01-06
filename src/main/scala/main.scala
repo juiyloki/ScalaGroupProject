@@ -40,6 +40,15 @@ class GameState(difficulty: Int) {
 
   var board: Board = maker.generatePuzzle()
 
+  // History of boards for Undo functionality
+  var history: List[Board] = Nil
+
+  // Lives System:
+  // Difficulty 1 (Very Easy) -> 5 lives
+  // Difficulty 5 (Very Hard) -> 1 life
+  val maxLives: Int = 6 - difficulty
+  var mistakes: Int = 0
+
   // At this the board always has solution.
   val fullBoard: Board = solver.brutSolve(board).orNull
 }
@@ -53,6 +62,7 @@ class SudokuApp extends Application {
   private var timerLabel: Label = _
   private var timeline: Timeline = _
   private var selectedDifficulty: Int = 3
+  private var livesLabel: Label = _
 
   private def formatTime(totalSeconds: Int): String = {
     val minutes = totalSeconds / 60
@@ -129,8 +139,26 @@ class SudokuApp extends Application {
         val CellPos(x, y) = btn.pos
 
         val current = gameState.board.getSquare(x, y)
+
+        // If we are changing the value, save the current board to history
+        if (current != value) {
+          gameState.history = gameState.board :: gameState.history
+        }
+
         val isMoveValid =
           (value == 0) || (value == current) || solver.isValid(gameState.board, x, y, value)
+
+        // If value is not 0 (clearing) and move is invalid, it's a mistake
+        if (value != 0 && !isMoveValid) {
+          gameState.mistakes += 1
+          updateLivesLabel()
+          
+          if (gameState.mistakes >= gameState.maxLives) {
+            stopTimer()
+            primaryStage.setScene(createGameOverScene())
+            return // Stop here, game is over
+          }
+        }
 
         setButtonTextColor(btn, isMoveValid)
         btn.setValue(value)
@@ -313,10 +341,15 @@ class SudokuApp extends Application {
     eraseButton.setOnAction(_ => trySetValue(0))
     numButtons.add(eraseButton, 9, 0)
 
+    val undoButton = new Button("Undo")
+    undoButton.getStyleClass.addAll("key") 
+    undoButton.setOnAction(_ => undo())
+    numButtons.add(undoButton, 10, 0)
+
     val hintButton = new Button("Hint")
     hintButton.getStyleClass.addAll("key", "hint")
     hintButton.setOnAction(_ => giveHint())
-    numButtons.add(hintButton, 10, 0)
+    numButtons.add(hintButton, 11, 0)
 
     val menuButton = new Button("Menu")
     menuButton.getStyleClass.add("key")
@@ -324,11 +357,14 @@ class SudokuApp extends Application {
       stopTimer()
       primaryStage.setScene(createMenuScene())
     })
-    numButtons.add(menuButton, 0, 1, 11, 1)
+    numButtons.add(menuButton, 0, 1, 12, 1)
 
     timerLabel = new Label("00:00")
     timerLabel.getStyleClass.add("timer")
-    val topBar = new HBox(timerLabel)
+    livesLabel = new Label("")
+    livesLabel.getStyleClass.add("timer") 
+    updateLivesLabel()
+    val topBar = new HBox(20, livesLabel, timerLabel)
     topBar.setAlignment(Pos.TOP_RIGHT)
 
     val root = new VBox(10, topBar, boardFX, numButtons)
@@ -467,4 +503,69 @@ class SudokuApp extends Application {
     stage.setScene(createMenuScene())
     stage.show()
   }
+
+  // Undo functionality
+
+  private def undo(): Unit = {
+    if (gameState.history.nonEmpty) {
+      // Restore the previous board
+      gameState.board = gameState.history.head
+      gameState.history = gameState.history.tail
+      
+      // Refresh the UI to match the restored board
+      refreshGrid()
+    }
+  }
+
+  private def refreshGrid(): Unit = {
+    cells.foreach { btn =>
+      val CellPos(r, c) = btn.pos
+      val value = gameState.board.getSquare(r, c)
+      
+      // Update text
+      btn.setValue(value)
+      
+      // Reset colors (remove red/blue/highlight) so they don't stick around
+      btn.getStyleClass.removeAll("btn-red", "btn-blue", "cell-highlight")
+    }
+    // Update lives label just in case
+    updateLivesLabel()
+  }
+
+  private def updateLivesLabel(): Unit = {
+    if (livesLabel != null) {
+      val remaining = gameState.maxLives - gameState.mistakes
+      livesLabel.setText(s"Lives: $remaining/${gameState.maxLives}")
+    }
+  }
+
+  // Defeat menu
+
+  private def createGameOverScene(): Scene = {
+    val title = new Label("Game Over")
+    title.getStyleClass.add("menu-title") // Reusing menu-title style
+
+    val msg = new Label("You ran out of lives!")
+    msg.setStyle("-fx-font-size: 18px; -fx-text-fill: white;")
+
+    val menuBtn = new Button("Back to Menu")
+    menuBtn.getStyleClass.addAll("key", "menu-button")
+    menuBtn.setPrefWidth(200)
+    menuBtn.setOnAction(_ => primaryStage.setScene(createMenuScene()))
+
+    val exitBtn = new Button("Exit")
+    exitBtn.getStyleClass.addAll("key", "menu-button")
+    exitBtn.setPrefWidth(200)
+    exitBtn.setOnAction(_ => Platform.exit())
+
+    val root = new VBox(20, title, msg, menuBtn, exitBtn)
+    root.setPadding(new Insets(30))
+    root.setAlignment(Pos.CENTER)
+    
+    // Reusing existing CSS
+    val scene = new Scene(root, 600, 650)
+    scene.getStylesheets.add(getClass.getResource("/css/style.css").toExternalForm)
+    scene
+  }
+
 }

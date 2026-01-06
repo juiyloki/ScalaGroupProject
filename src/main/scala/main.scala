@@ -11,6 +11,10 @@ import javafx.scene.control.Label
 import javafx.geometry.Pos
 import javafx.scene.layout.HBox
 import logic.{Board, SudokuMaker, SudokuSolver}
+import javafx.scene.input.{KeyCode, KeyEvent}
+import javafx.scene.control.Alert
+import javafx.scene.control.Alert.AlertType
+import javafx.scene.control.ButtonType
 
 object Main {
   def main(args: Array[String]): Unit = {
@@ -19,7 +23,7 @@ object Main {
 }
 
 object GameConfig {
-  var pinkMode: Boolean = true
+  var pinkMode: Boolean = false
 }
 
 case class CellPos(x: Int, y: Int)
@@ -137,9 +141,11 @@ class SudokuApp extends Application {
     btn.getStyleClass.add(if (isValid) "btn-blue" else "btn-red")
   }
 
-  private def trySetValue(value: Int): Unit =
-    gameState.selectedCell.foreach { btn =>
-      if (btn.isMutable) {
+  private def trySetValue(value: Int): Unit = {
+    if (gameState.selectedCell.isEmpty) return
+    val btn = gameState.selectedCell.get
+
+    if (btn.isMutable) {
         val CellPos(x, y) = btn.pos
 
         val current = gameState.board.getSquare(x, y)
@@ -160,7 +166,7 @@ class SudokuApp extends Application {
           if (gameState.mistakes >= gameState.maxLives) {
             stopTimer()
             primaryStage.setScene(createGameOverScene())
-            return // Stop here, game is over
+            return
           }
         }
 
@@ -186,7 +192,7 @@ class SudokuApp extends Application {
         }
         highlightSameNumbers(selectedValue)
       }
-    }
+  }
 
   private def cellAt(row: Int, col: Int): CellButton =
     cells.find(_.pos == CellPos(row, col)).get
@@ -268,6 +274,60 @@ class SudokuApp extends Application {
     }
   }
 
+  private def handleCellSelection(cell: CellButton): Unit = {
+    selectButton(cell)
+    highlightLine(cell.pos.x, cell.pos.y)
+
+    val value = cell.getText match {
+      case null | "" => 0
+      case s => s.toInt
+    }
+    highlightSameNumbers(value)
+  }
+
+  private def handleGameKeyPress(e: KeyEvent): Unit = {
+    if (e.isControlDown && e.getCode == KeyCode.Z) {
+      undo()
+      e.consume()
+      return
+    }
+
+    if (gameState.selectedCell.isDefined) {
+      val current = gameState.selectedCell.get
+      val CellPos(r, c) = current.pos
+      e.getCode match {
+        case KeyCode.UP    => if (r > 0) handleCellSelection(cellAt(r - 1, c)); e.consume()
+        case KeyCode.DOWN  => if (r < 8) handleCellSelection(cellAt(r + 1, c)); e.consume()
+        case KeyCode.LEFT  => if (c > 0) handleCellSelection(cellAt(r, c - 1)); e.consume()
+        case KeyCode.RIGHT => if (c < 8) handleCellSelection(cellAt(r, c + 1)); e.consume()
+        case _ =>
+      }
+    } else if (cells.nonEmpty) {
+       e.getCode match {
+         case KeyCode.UP | KeyCode.DOWN | KeyCode.LEFT | KeyCode.RIGHT =>
+           handleCellSelection(cellAt(4, 4))
+           e.consume()
+         case _ =>
+       }
+    }
+
+    e.getCode match {
+      case KeyCode.DIGIT1 | KeyCode.NUMPAD1 => trySetValue(1); e.consume()
+      case KeyCode.DIGIT2 | KeyCode.NUMPAD2 => trySetValue(2); e.consume()
+      case KeyCode.DIGIT3 | KeyCode.NUMPAD3 => trySetValue(3); e.consume()
+      case KeyCode.DIGIT4 | KeyCode.NUMPAD4 => trySetValue(4); e.consume()
+      case KeyCode.DIGIT5 | KeyCode.NUMPAD5 => trySetValue(5); e.consume()
+      case KeyCode.DIGIT6 | KeyCode.NUMPAD6 => trySetValue(6); e.consume()
+      case KeyCode.DIGIT7 | KeyCode.NUMPAD7 => trySetValue(7); e.consume()
+      case KeyCode.DIGIT8 | KeyCode.NUMPAD8 => trySetValue(8); e.consume()
+      case KeyCode.DIGIT9 | KeyCode.NUMPAD9 => trySetValue(9); e.consume()
+      case KeyCode.DIGIT0 | KeyCode.NUMPAD0 | KeyCode.BACK_SPACE | KeyCode.DELETE => trySetValue(0); e.consume()
+      case KeyCode.H => giveHint(); e.consume()
+      case KeyCode.M => confirmExitToMenu(); e.consume()
+      case _ =>
+    }
+  }
+
   private def setSudokuBorders(cell: Button, row: Int, col: Int): Unit = {
     val thin = 0.5
     val thick = 2.0
@@ -312,6 +372,7 @@ class SudokuApp extends Application {
       cell.setPrefSize(50, 50)
       cells = cells :+ cell
 
+      cell.setFocusTraversable(false)
       // CSS look
       cell.getStyleClass.add("cell")
       if (!cell.isMutable) cell.getStyleClass.add("cell-given")
@@ -319,16 +380,7 @@ class SudokuApp extends Application {
       // lines for sections of 3×3
       setSudokuBorders(cell, i, j)
 
-      cell.setOnAction(_ => {
-        selectButton(cell)
-        highlightLine(cell.pos.x, cell.pos.y)
-
-        val value = cell.getText match {
-          case null | "" => 0
-          case s => s.toInt
-        }
-        highlightSameNumbers(value)
-      })
+      cell.setOnAction(_ => handleCellSelection(cell))
 
       boardFX.add(cell, j, i)
     }
@@ -336,31 +388,33 @@ class SudokuApp extends Application {
     for (i <- 1 to 9) {
       val button = new Button(i.toString)
       button.getStyleClass.add("key")
+      button.setFocusTraversable(false)
       button.setOnAction(_ => trySetValue(i))
       numButtons.add(button, i - 1, 0)
     }
 
     val eraseButton = new Button("X")
     eraseButton.getStyleClass.add("key")
+    eraseButton.setFocusTraversable(false)
     eraseButton.setOnAction(_ => trySetValue(0))
     numButtons.add(eraseButton, 9, 0)
 
     val undoButton = new Button("Undo")
     undoButton.getStyleClass.addAll("key") 
+    undoButton.setFocusTraversable(false)
     undoButton.setOnAction(_ => undo())
     numButtons.add(undoButton, 10, 0)
 
     val hintButton = new Button("Hint")
     hintButton.getStyleClass.addAll("key", "hint")
+    hintButton.setFocusTraversable(false)
     hintButton.setOnAction(_ => giveHint())
     numButtons.add(hintButton, 11, 0)
 
     val menuButton = new Button("Menu")
     menuButton.getStyleClass.add("key")
-    menuButton.setOnAction(_ => {
-      stopTimer()
-      primaryStage.setScene(createMenuScene())
-    })
+    menuButton.setFocusTraversable(false)
+    menuButton.setOnAction(_ => confirmExitToMenu())
     numButtons.add(menuButton, 0, 1, 12, 1)
 
     timerLabel = new Label("00:00")
@@ -381,8 +435,22 @@ class SudokuApp extends Application {
     if (GameConfig.pinkMode) {
       scene.getStylesheets.add(getClass.getResource("/css/pink.css").toExternalForm)
     }
+    scene.addEventFilter(KeyEvent.KEY_PRESSED, e => handleGameKeyPress(e))
     startTimer()
     scene
+  }
+
+  private def confirmExitToMenu(): Unit = {
+    val alert = new Alert(AlertType.CONFIRMATION)
+    alert.setTitle("Exit to Menu")
+    alert.setHeaderText("Are you sure that you want to exit to menu?")
+    alert.setContentText("Your progress will not be saved.")
+
+    val result = alert.showAndWait()
+    if (result.isPresent && result.get() == ButtonType.OK) {
+      stopTimer()
+      primaryStage.setScene(createMenuScene())
+    }
   }
 
   private def createMenuScene(): Scene = {
@@ -414,6 +482,7 @@ class SudokuApp extends Application {
     val playBtn = new Button("Play")
     playBtn.getStyleClass.addAll("key", "menu-button")
     playBtn.setPrefWidth(200)
+    playBtn.setDefaultButton(true)
     playBtn.setOnAction(_ => {
       gameState = new GameState(selectedDifficulty)
       primaryStage.setScene(createGameScene())
@@ -426,7 +495,12 @@ class SudokuApp extends Application {
       primaryStage.setScene(createRulesScene())
     })
 
-    val buttons = new HBox(12, playBtn, rulesBtn)
+    val controlsBtn = new Button("Controls")
+    controlsBtn.getStyleClass.addAll("key", "menu-button")
+    controlsBtn.setPrefWidth(200)
+    controlsBtn.setOnAction(_ => primaryStage.setScene(createControlsScene()))
+
+    val buttons = new VBox(12, playBtn, rulesBtn, controlsBtn)
     buttons.setAlignment(Pos.CENTER)
 
     val root = new VBox(18, title, subtitle, difficultyBox, buttons)
@@ -438,6 +512,8 @@ class SudokuApp extends Application {
     if (GameConfig.pinkMode) {
       scene.getStylesheets.add(getClass.getResource("/css/pink.css").toExternalForm)
     }
+    
+    Platform.runLater(() => playBtn.requestFocus())
     scene
   }
 
@@ -473,6 +549,39 @@ class SudokuApp extends Application {
     scene
   }
 
+  private def createControlsScene(): Scene = {
+    val title = new Label("Controls")
+    title.getStyleClass.add("menu-title")
+
+    val content = new Label(
+      "• Mouse: Click cells to select, click keypad to enter.\n" +
+      "• Arrows: Move selection.\n" +
+      "• 1-9: Enter number.\n" +
+      "• 0 / Backspace / Delete: Clear cell.\n" +
+      "• Ctrl + Z: Undo.\n" +
+      "• H: Hint.\n" +
+      "• M: Menu."
+    )
+    content.getStyleClass.add("rules-text")
+    content.setWrapText(true)
+
+    val backBtn = new Button("Back")
+    backBtn.getStyleClass.addAll("key", "menu-button")
+    backBtn.setPrefWidth(200)
+    backBtn.setOnAction(_ => primaryStage.setScene(createMenuScene()))
+
+    val root = new VBox(18, title, content, backBtn)
+    root.setPadding(new Insets(30))
+    root.setAlignment(Pos.CENTER)
+
+    val scene = new Scene(root, 600, 650)
+    scene.getStylesheets.add(getClass.getResource("/css/style.css").toExternalForm)
+    if (GameConfig.pinkMode) {
+      scene.getStylesheets.add(getClass.getResource("/css/pink.css").toExternalForm)
+    }
+    scene
+  }
+
   private def createVictoryScene(timeSeconds: Int): Scene = {
     val title = new Label("You won!")
     title.getStyleClass.add("menu-title")
@@ -484,7 +593,7 @@ class SudokuApp extends Application {
     playAgainBtn.getStyleClass.addAll("key", "menu-button")
     playAgainBtn.setPrefWidth(200)
     playAgainBtn.setOnAction(_ => {
-      gameState = new GameState(selectedDifficulty) // same difficulty
+      gameState = new GameState(selectedDifficulty)
       primaryStage.setScene(createGameScene())
     })
 

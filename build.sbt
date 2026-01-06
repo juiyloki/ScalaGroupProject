@@ -1,5 +1,6 @@
 ThisBuild / scalaVersion := "3.3.7"
 ThisBuild / version := "0.1.0"
+Compile / run / mainClass := Some("Main")
 
 lazy val root = (project in file("."))
   .settings(
@@ -12,4 +13,3 @@ lazy val root = (project in file("."))
       "org.openjfx" % "javafx-fxml" % "25.0.1"
     )
   )
-

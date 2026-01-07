@@ -17,6 +17,24 @@ It provides a smooth and user-friendly gameplay experience with multiple quality
 
 ---
 
+## Running Instructions
+
+To run the program on **Ubuntu 24.04**, type the following commands:
+
+```bash
+sbt compile
+sbt run
+```
+
+---
+
+### Prerequisites
+
+Make sure to have **sbt** installed. You can find the official installation guide here:
+[https://www.scala-sbt.org/download.html](https://www.scala-sbt.org/download.html)
+
+---
+
 ## Features
 
 - Gameplay on a 9×9 board using buttons

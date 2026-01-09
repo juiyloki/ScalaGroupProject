@@ -1,4 +1,4 @@
-import javafx.scene.layout.{GridPane, VBox}
+import javafx.scene.layout.{GridPane, HBox, Pane, Priority, VBox}
 import javafx.application.Application
 import javafx.scene.Scene
 import javafx.scene.control.*
@@ -9,7 +9,6 @@ import javafx.animation.{Animation, KeyFrame, Timeline}
 import javafx.util.Duration
 import javafx.scene.control.Label
 import javafx.geometry.Pos
-import javafx.scene.layout.HBox
 import logic.{Board, SudokuMaker, SudokuSolver}
 import javafx.scene.input.{KeyCode, KeyEvent}
 import javafx.scene.control.Alert
@@ -212,7 +211,7 @@ class SudokuApp extends Application {
           
           if (GameConfig.showLives && gameState.mistakes >= gameState.maxLives) {
             stopTimer()
-            primaryStage.setScene(createGameOverScene())
+            changeScene(createGameOverScene())
             return
           }
         }
@@ -295,7 +294,7 @@ class SudokuApp extends Application {
   private def checkForWin(): Unit = {
     if (gameState.board.isValueEqual(gameState.fullBoard)) {
       stopTimer()
-      primaryStage.setScene(createVictoryScene(elapsedSeconds))
+      changeScene(createVictoryScene(elapsedSeconds))
     }
   }
 
@@ -387,6 +386,24 @@ class SudokuApp extends Application {
     cell.setStyle(s"-fx-border-color: #444; -fx-border-width: $top $right $bottom $left;")
   }
 
+
+  private def changeScene(scene: Scene): Unit = {
+    // takes current dimensions to maintain window size
+    val currentWidth = primaryStage.getWidth
+    val currentHeight = primaryStage.getHeight
+
+    primaryStage.setScene(scene)
+
+    primaryStage.setWidth(currentWidth)
+    primaryStage.setHeight(currentHeight)
+
+    // sets minimum size so the window cannot be made too small
+    val root = scene.getRoot.asInstanceOf[javafx.scene.layout.Region]
+
+    primaryStage.setMinWidth(root.minWidth(-1))
+    primaryStage.setMinHeight(root.minHeight(-1))
+  }
+
   // Helper to wrap content with the side video if enabled
   private def finalizeScene(content: javafx.scene.layout.Region): Scene = {
     // Enforce the standard Sudoku window size for the content part
@@ -396,6 +413,7 @@ class SudokuApp extends Application {
     content.setPrefHeight(650)
 
     val root = new HBox()
+    root.setAlignment(Pos.CENTER)
     root.getChildren.add(content)
 
     if (GameConfig.showVideo && videoMediaPlayer != null) {
@@ -425,7 +443,9 @@ class SudokuApp extends Application {
     numButtons.setHgap(5)
     numButtons.setVgap(5)
     numButtons.setPadding(new Insets(10))
+    numButtons.setAlignment(Pos.CENTER)
 
+    // Making the sudoku grid
     for (_ <- 0 until 9) {
       val col = new javafx.scene.layout.ColumnConstraints()
       col.setPercentWidth(100.0 / 9)
@@ -458,6 +478,7 @@ class SudokuApp extends Application {
       boardFX.add(cell, j, i)
     }
 
+    // Bottom buttons - input, erase, undo, hints
     for (i <- 1 to 9) {
       val button = new Button(i.toString)
       button.getStyleClass.add("key")
@@ -486,24 +507,39 @@ class SudokuApp extends Application {
       numButtons.add(hintButton, 11, 0)
     }
 
+    val topBar = new HBox(20)
+    topBar.setAlignment(Pos.CENTER)
+
+    // Top bar elements - back to menu, lives, timer
     val menuButton = new Button("Menu")
     menuButton.getStyleClass.add("key")
     menuButton.setFocusTraversable(false)
     menuButton.setOnAction(_ => confirmExitToMenu())
-    numButtons.add(menuButton, 0, 1, 12, 1)
 
+    // Makes menu button and timer & lives sligned to opposite sides
+    val spacer = new Pane
+    HBox.setHgrow(spacer, Priority.ALWAYS)
+    topBar.getChildren.addAll(menuButton, spacer)
+
+    livesLabel = new Label("")
+    livesLabel.getStyleClass.add("timer")
+    if (GameConfig.showLives) {
+      topBar.getChildren.add(livesLabel)
+    }
+    updateLivesLabel()
     timerLabel = new Label("00:00")
     timerLabel.getStyleClass.add("timer")
-    livesLabel = new Label("")
-    livesLabel.getStyleClass.add("timer") 
-    updateLivesLabel()
-    val topBar = new HBox(20, livesLabel, timerLabel)
-    topBar.setAlignment(Pos.TOP_RIGHT)
+    if (GameConfig.showTimer) {
+      topBar.getChildren.add(timerLabel)
+    }
 
     val root = new VBox(10, topBar, boardFX, numButtons)
+
+    root.setAlignment(javafx.geometry.Pos.CENTER)
     root.setPadding(new Insets(20))
 
     val scene = finalizeScene(root)
+
     scene.addEventFilter(KeyEvent.KEY_PRESSED, e => handleGameKeyPress(e))
     startTimer()
     scene
@@ -518,7 +554,7 @@ class SudokuApp extends Application {
     val result = alert.showAndWait()
     if (result.isPresent && result.get() == ButtonType.OK) {
       stopTimer()
-      primaryStage.setScene(createMenuScene())
+      changeScene(createMenuScene())
     }
   }
 
@@ -550,25 +586,30 @@ class SudokuApp extends Application {
     playBtn.setDefaultButton(true)
     playBtn.setOnAction(_ => {
       gameState = new GameState(selectedDifficulty)
-      primaryStage.setScene(createGameScene())
+      val scene = createGameScene()
+      changeScene(scene)
+      // This forces the window to respect the content's minimum size
+      primaryStage.setMinWidth(scene.getRoot.minWidth(-1))
+      primaryStage.setMinHeight(scene.getRoot.minHeight(-1))
     })
 
     val rulesBtn = new Button("Rules")
     rulesBtn.getStyleClass.addAll("key", "menu-button")
     rulesBtn.setPrefWidth(200)
     rulesBtn.setOnAction(_ => {
-      primaryStage.setScene(createRulesScene())
+
+      changeScene(createRulesScene())
     })
 
     val controlsBtn = new Button("Controls")
     controlsBtn.getStyleClass.addAll("key", "menu-button")
     controlsBtn.setPrefWidth(200)
-    controlsBtn.setOnAction(_ => primaryStage.setScene(createControlsScene()))
+    controlsBtn.setOnAction(_ => changeScene(createControlsScene()))
 
     val settingsBtn = new Button("Settings")
     settingsBtn.getStyleClass.addAll("key", "menu-button")
     settingsBtn.setPrefWidth(200)
-    settingsBtn.setOnAction(_ => primaryStage.setScene(createSettingsScene()))
+    settingsBtn.setOnAction(_ => changeScene(createSettingsScene()))
 
     val buttons = new VBox(12, playBtn, rulesBtn, controlsBtn, settingsBtn)
     buttons.setAlignment(Pos.CENTER)
@@ -579,6 +620,8 @@ class SudokuApp extends Application {
     val root = new VBox(25, title, difficultyBox, buttons)
     root.setPadding(new Insets(30))
     root.setAlignment(Pos.CENTER)
+
+    root.setMinSize(600, 650)
 
     val scene = finalizeScene(root)
     Platform.runLater(() => playBtn.requestFocus())
@@ -603,7 +646,7 @@ class SudokuApp extends Application {
     val backBtn = new Button("Back")
     backBtn.getStyleClass.addAll("key", "menu-button")
     backBtn.setPrefWidth(200)
-    backBtn.setOnAction(_ => primaryStage.setScene(createMenuScene()))
+    backBtn.setOnAction(_ => changeScene(createMenuScene()))
 
     val root = new VBox(18, title, rulesText, backBtn)
     root.setPadding(new Insets(30))
@@ -631,7 +674,7 @@ class SudokuApp extends Application {
     val backBtn = new Button("Back")
     backBtn.getStyleClass.addAll("key", "menu-button")
     backBtn.setPrefWidth(200)
-    backBtn.setOnAction(_ => primaryStage.setScene(createMenuScene()))
+    backBtn.setOnAction(_ => changeScene(createMenuScene()))
 
     val root = new VBox(18, title, content, backBtn)
     root.setPadding(new Insets(30))
@@ -677,13 +720,13 @@ class SudokuApp extends Application {
         if (v) videoMediaPlayer.play() else videoMediaPlayer.pause()
       }
       // Refresh the scene to update layout (add/remove video pane)
-      primaryStage.setScene(createSettingsScene())
+      changeScene(createSettingsScene())
     })
 
     val backBtn = new Button("Back")
     backBtn.getStyleClass.addAll("key", "menu-button")
     backBtn.setPrefWidth(200)
-    backBtn.setOnAction(_ => primaryStage.setScene(createMenuScene()))
+    backBtn.setOnAction(_ => changeScene(createMenuScene()))
 
     val root = new VBox(20, title, hintsCb, timerCb, livesCb, pinkCb, musicCb, videoCb, backBtn)
     root.setPadding(new Insets(30))
@@ -704,13 +747,13 @@ class SudokuApp extends Application {
     playAgainBtn.setPrefWidth(200)
     playAgainBtn.setOnAction(_ => {
       gameState = new GameState(selectedDifficulty)
-      primaryStage.setScene(createGameScene())
+      changeScene(createGameScene())
     })
 
     val menuBtn = new Button("Menu")
     menuBtn.getStyleClass.addAll("key", "menu-button")
     menuBtn.setPrefWidth(200)
-    menuBtn.setOnAction(_ => primaryStage.setScene(createMenuScene()))
+    menuBtn.setOnAction(_ => changeScene(createMenuScene()))
 
     val exitBtn = new Button("Exit")
     exitBtn.getStyleClass.addAll("key", "menu-button")
@@ -732,7 +775,16 @@ class SudokuApp extends Application {
     stage.setTitle("Sudoku")
     initMusic()
     initVideo()
-    stage.setScene(createMenuScene())
+
+    val scene = createMenuScene()
+    stage.setScene(scene)
+
+    // sets minimum size so the window cannot be made too small
+    val root = scene.getRoot.asInstanceOf[javafx.scene.layout.Region]
+
+    primaryStage.setMinWidth(root.minWidth(-1))
+    primaryStage.setMinHeight(root.minHeight(-1))
+
     stage.show()
   }
 
@@ -787,7 +839,7 @@ class SudokuApp extends Application {
     val menuBtn = new Button("Back to Menu")
     menuBtn.getStyleClass.addAll("key", "menu-button")
     menuBtn.setPrefWidth(200)
-    menuBtn.setOnAction(_ => primaryStage.setScene(createMenuScene()))
+    menuBtn.setOnAction(_ => changeScene(createMenuScene()))
 
     val exitBtn = new Button("Exit")
     exitBtn.getStyleClass.addAll("key", "menu-button")

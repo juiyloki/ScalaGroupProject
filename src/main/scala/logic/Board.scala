@@ -13,7 +13,7 @@ class Board(private val N: Int, private val board: Vector[Vector[Square]]) {
   def getSize: Int = N
   
   def getSquare(row: Int, col: Int): Int = {
-    board(row)(col).getValue
+    board(row)(col).value
   }
   
   private def changeSquare(row: Int, col: Int, newSquare: Square): Board = {    
@@ -46,7 +46,7 @@ class Board(private val N: Int, private val board: Vector[Vector[Square]]) {
       case (thisRow, otherRow) =>
         thisRow.zip(otherRow).forall { 
           case (thisSquare, otherSquare) =>
-          thisSquare.getValue == otherSquare.getValue
+          thisSquare.value == otherSquare.value
         }
         
     }
@@ -66,7 +66,7 @@ class Board(private val N: Int, private val board: Vector[Vector[Square]]) {
 
       // Convert the row of Squares into a row of Strings ("?" or number)
       val rowStrings = row.map { square =>
-        if (square.getVisibility) square.getValue.toString
+        if (square.visibility) square.value.toString
         else "_"
       }
 
@@ -83,7 +83,7 @@ class Board(private val N: Int, private val board: Vector[Vector[Square]]) {
 
   /** Returns true if the square at (row, col) was part of the puzzle (hidden). */
   def isHidden(row: Int, col: Int): Boolean =
-    !board(row)(col).getVisibility
+    !board(row)(col).visibility
 
   /** Updates the value at (row, col) and marks the square as visible. */
   def setUserValue(value: Int, row: Int, col: Int): Board = {

@@ -570,6 +570,9 @@ class SudokuApp extends Application {
   }
 
   private def createMenuScene(): Scene = {
+    var selectedDifficulty = 3
+    var selectedSize = 9
+
     val title = new Label("Sudoku")
     title.getStyleClass.add("menu-title")
 

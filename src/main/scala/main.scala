@@ -44,9 +44,17 @@ class CellButton(val pos: CellPos, initial: Int) extends Button {
   setValue(initial)
 }
 
-class GameState(difficulty: Int) {
+class GameState(difficulty: Int, N: Int) {
+
+  val (boxHeight, boxWidth) = N match {
+    case 9 => (3, 3)
+    case 6 => (2, 3)
+    case 4 => (2, 2)
+    case _ => (3, 3)
+  }
+
   private val solver = SudokuSolver()
-  private val maker = SudokuMaker(difficulty, N = 9)
+  private val maker = SudokuMaker(difficulty, N, boxHeight, boxWidth)
 
   // We keep track of the last cell selected by user.
   var selectedCell: Option[CellButton] = None
@@ -74,6 +82,7 @@ class SudokuApp extends Application {
   private var elapsedSeconds: Int = 0
   private var timerLabel: Label = _
   private var timeline: Timeline = _
+  private var selectedSize: Int = 9
   private var selectedDifficulty: Int = 3
   private var livesLabel: Label = _
   private var mediaPlayer: MediaPlayer = _
@@ -192,66 +201,68 @@ class SudokuApp extends Application {
     val btn = gameState.selectedCell.get
 
     if (btn.isMutable) {
-        val CellPos(x, y) = btn.pos
+      val CellPos(x, y) = btn.pos
 
-        val current = gameState.board.getSquare(x, y)
+      val current = gameState.board.getSquare(x, y)
 
-        // If we are changing the value, save the current board to history
-        if (current != value) {
-          gameState.history = gameState.board :: gameState.history
-        }
-
-        val isMoveValid =
-          (value == 0) || (value == current) || solver.isValid(gameState.board, x, y, value)
-
-        // If value is not 0 (clearing) and move is invalid, it's a mistake
-        if (value != 0 && !isMoveValid) {
-          gameState.mistakes += 1
-          updateLivesLabel()
-          
-          if (GameConfig.showLives && gameState.mistakes >= gameState.maxLives) {
-            stopTimer()
-            changeScene(createGameOverScene())
-            return
-          }
-        }
-
-        setButtonTextColor(btn, isMoveValid)
-        btn.setValue(value)
-        gameState.board = gameState.board.changeValue(value, x, y)
-
-        // Highlighting when row/column/group complete
-        val rowGroup = rowCells(x)
-        if (isComplete(rowGroup)) flashCompleted(rowGroup)
-
-        val colGroup = colCells(y)
-        if (isComplete(colGroup)) flashCompleted(colGroup)
-
-        val blockGroup = blockCells(x, y)
-        if (isComplete(blockGroup)) flashCompleted(blockGroup)
-
-        checkForWin()
-        // reset highlight for current cell
-        val selectedValue = btn.getText match {
-          case null | "" => 0
-          case s => s.toInt
-        }
-        highlightSameNumbers(selectedValue)
+      // If we are changing the value, save the current board to history
+      if (current != value) {
+        gameState.history = gameState.board :: gameState.history
       }
+
+      val isMoveValid =
+        (value == 0) || (value == current) || solver.isValid(gameState.board, x, y, value)
+
+      // If value is not 0 (clearing) and move is invalid, it's a mistake
+      if (value != 0 && !isMoveValid) {
+        gameState.mistakes += 1
+        updateLivesLabel()
+
+        if (GameConfig.showLives && gameState.mistakes >= gameState.maxLives) {
+          stopTimer()
+          changeScene(createGameOverScene())
+          return
+        }
+      }
+
+      setButtonTextColor(btn, isMoveValid)
+      btn.setValue(value)
+      gameState.board = gameState.board.changeValue(value, x, y)
+
+      // Highlighting when row/column/group complete
+      val rowGroup = rowCells(x)
+      if (isComplete(rowGroup)) flashCompleted(rowGroup)
+
+      val colGroup = colCells(y)
+      if (isComplete(colGroup)) flashCompleted(colGroup)
+
+      val blockGroup = blockCells(x, y)
+      if (isComplete(blockGroup)) flashCompleted(blockGroup)
+
+      checkForWin()
+      // reset highlight for current cell
+      val selectedValue = btn.getText match {
+        case null | "" => 0
+        case s => s.toInt
+      }
+      highlightSameNumbers(selectedValue)
+    }
   }
 
   private def cellAt(row: Int, col: Int): CellButton =
     cells.find(_.pos == CellPos(row, col)).get
 
   private def rowCells(row: Int): Vector[CellButton] =
-    (0 until 9).map(col => cellAt(row, col)).toVector
+    (0 until gameState.board.N).map(col => cellAt(row, col)).toVector
 
   private def colCells(col: Int): Vector[CellButton] =
-    (0 until 9).map(row => cellAt(row, col)).toVector
+    (0 until gameState.board.N).map(row => cellAt(row, col)).toVector
 
   private def blockCells(row: Int, col: Int): Vector[CellButton] = {
-    val r0 = (row / 3) * 3
-    val c0 = (col / 3) * 3
+    val height = gameState.board.boxHeight
+    val width = gameState.board.boxWidth
+    val r0 = (row / height) * height
+    val c0 = (col / width) * width
     (for {
       r <- r0 until (r0 + 3)
       c <- c0 until (c0 + 3)
@@ -349,12 +360,12 @@ class SudokuApp extends Application {
         case _ =>
       }
     } else if (cells.nonEmpty) {
-       e.getCode match {
-         case KeyCode.UP | KeyCode.DOWN | KeyCode.LEFT | KeyCode.RIGHT =>
-           handleCellSelection(cellAt(4, 4))
-           e.consume()
-         case _ =>
-       }
+      e.getCode match {
+        case KeyCode.UP | KeyCode.DOWN | KeyCode.LEFT | KeyCode.RIGHT =>
+          handleCellSelection(cellAt(4, 4))
+          e.consume()
+        case _ =>
+      }
     }
 
     e.getCode match {
@@ -374,14 +385,14 @@ class SudokuApp extends Application {
     }
   }
 
-  private def setSudokuBorders(cell: Button, row: Int, col: Int): Unit = {
+  private def setSudokuBorders(cell: Button, row: Int, col: Int, boxHeight: Int, boxWidth: Int): Unit = {
     val thin = 0.5
     val thick = 2.0
 
-    val top = if (row % 3 == 0) thick else thin
-    val left = if (col % 3 == 0) thick else thin
-    val bottom = if ((row + 1) % 3 == 0) thick else thin
-    val right = if ((col + 1) % 3 == 0) thick else thin
+    val top = if (row % boxHeight == 0) thick else thin
+    val left = if (col % boxWidth == 0) thick else thin
+    val bottom = if ((row + 1) % boxHeight == 0) thick else thin
+    val right = if ((col + 1) % boxWidth == 0) thick else thin
 
     cell.setStyle(s"-fx-border-color: #444; -fx-border-width: $top $right $bottom $left;")
   }
@@ -431,7 +442,7 @@ class SudokuApp extends Application {
     scene
   }
 
-  private def createGameScene(): Scene = {
+  private def createGameScene(board: Board): Scene = {
     val boardFX = new GridPane()
     cells = Vector.empty
     boardFX.getStyleClass.add("board")
@@ -446,17 +457,17 @@ class SudokuApp extends Application {
     numButtons.setAlignment(Pos.CENTER)
 
     // Making the sudoku grid
-    for (_ <- 0 until 9) {
+    for (_ <- 0 until board.N) {
       val col = new javafx.scene.layout.ColumnConstraints()
-      col.setPercentWidth(100.0 / 9)
+      col.setPercentWidth(100.0 / board.N)
       boardFX.getColumnConstraints.add(col)
 
       val row = new javafx.scene.layout.RowConstraints()
-      row.setPercentHeight(100.0 / 9)
+      row.setPercentHeight(100.0 / board.N)
       boardFX.getRowConstraints.add(row)
     }
 
-    for (i <- 0 until 9; j <- 0 until 9) {
+    for (i <- 0 until board.N; j <- 0 until board.N) {
       val cell = new CellButton(
         CellPos(i, j),
         gameState.board.getSquare(i, j)
@@ -470,8 +481,8 @@ class SudokuApp extends Application {
       cell.getStyleClass.add("cell")
       if (!cell.isMutable) cell.getStyleClass.add("cell-given")
 
-      // lines for sections of 3×3
-      setSudokuBorders(cell, i, j)
+      // lines for small sections (3x3 boxes in 9x9 sudoku)
+      setSudokuBorders(cell, i, j, board.boxHeight, board.boxWidth)
 
       cell.setOnAction(_ => handleCellSelection(cell))
 
@@ -494,7 +505,7 @@ class SudokuApp extends Application {
     numButtons.add(eraseButton, 9, 0)
 
     val undoButton = new Button("Undo")
-    undoButton.getStyleClass.addAll("key") 
+    undoButton.getStyleClass.addAll("key")
     undoButton.setFocusTraversable(false)
     undoButton.setOnAction(_ => undo())
     numButtons.add(undoButton, 10, 0)
@@ -562,7 +573,7 @@ class SudokuApp extends Application {
     val title = new Label("Sudoku")
     title.getStyleClass.add("menu-title")
 
-    val subtitle = new Label("Choose difficulty:")
+    val subtitle = new Label("Choose difficulty & board size:")
     subtitle.getStyleClass.add("menu-subtitle")
     subtitle.setStyle("-fx-font-size: 14px;")
 
@@ -580,13 +591,25 @@ class SudokuApp extends Application {
       case _           => 3
     })
 
+    val sizeCombo = new ComboBox[String]()
+    sizeCombo.getItems.addAll("9 x 9", "6 x 6", "4 x 4")
+    sizeCombo.setValue("9 x 9")
+    sizeCombo.getStyleClass.addAll("key", "menu-button")
+    sizeCombo.setPrefWidth(200)
+    sizeCombo.setOnAction(_ => selectedSize = sizeCombo.getValue match {
+      case "9 x 9" => 9
+      case "6 x 6" => 6
+      case "4 x 4" => 4
+      case _ => 9
+    })
+
     val playBtn = new Button("Play")
     playBtn.getStyleClass.addAll("key", "menu-button")
     playBtn.setPrefWidth(200)
     playBtn.setDefaultButton(true)
     playBtn.setOnAction(_ => {
-      gameState = new GameState(selectedDifficulty)
-      val scene = createGameScene()
+      gameState = new GameState(selectedDifficulty, selectedSize)
+      val scene = createGameScene(gameState.board)
       changeScene(scene)
       // This forces the window to respect the content's minimum size
       primaryStage.setMinWidth(scene.getRoot.minWidth(-1))
@@ -614,7 +637,7 @@ class SudokuApp extends Application {
     val buttons = new VBox(12, playBtn, rulesBtn, controlsBtn, settingsBtn)
     buttons.setAlignment(Pos.CENTER)
 
-    val difficultyBox = new VBox(5, subtitle, difficultyCombo)
+    val difficultyBox = new VBox(5, subtitle, difficultyCombo, sizeCombo)
     difficultyBox.setAlignment(Pos.CENTER)
 
     val root = new VBox(25, title, difficultyBox, buttons)
@@ -661,12 +684,12 @@ class SudokuApp extends Application {
 
     val content = new Label(
       "• Mouse: Click cells to select, click keypad to enter.\n" +
-      "• Arrows: Move selection.\n" +
-      "• 1-9: Enter number.\n" +
-      "• 0 / Backspace / Delete: Clear cell.\n" +
-      "• Ctrl + Z: Undo.\n" +
-      "• H: Hint.\n" +
-      "• M: Menu."
+        "• Arrows: Move selection.\n" +
+        "• 1-9: Enter number.\n" +
+        "• 0 / Backspace / Delete: Clear cell.\n" +
+        "• Ctrl + Z: Undo.\n" +
+        "• H: Hint.\n" +
+        "• M: Menu."
     )
     content.getStyleClass.add("rules-text")
     content.setWrapText(true)
@@ -709,7 +732,7 @@ class SudokuApp extends Application {
       val scene = primaryStage.getScene
       if (v) {
         if (!scene.getStylesheets.contains(getClass.getResource("/css/pink.css").toExternalForm))
-           scene.getStylesheets.add(getClass.getResource("/css/pink.css").toExternalForm)
+          scene.getStylesheets.add(getClass.getResource("/css/pink.css").toExternalForm)
       } else {
         scene.getStylesheets.remove(getClass.getResource("/css/pink.css").toExternalForm)
       }
@@ -746,8 +769,8 @@ class SudokuApp extends Application {
     playAgainBtn.getStyleClass.addAll("key", "menu-button")
     playAgainBtn.setPrefWidth(200)
     playAgainBtn.setOnAction(_ => {
-      gameState = new GameState(selectedDifficulty)
-      changeScene(createGameScene())
+      gameState = new GameState(selectedDifficulty, gameState.board.N)
+      changeScene(createGameScene(gameState.board))
     })
 
     val menuBtn = new Button("Menu")
@@ -795,7 +818,7 @@ class SudokuApp extends Application {
       // Restore the previous board
       gameState.board = gameState.history.head
       gameState.history = gameState.history.tail
-      
+
       // Refresh the UI to match the restored board
       refreshGrid()
     }
@@ -805,10 +828,10 @@ class SudokuApp extends Application {
     cells.foreach { btn =>
       val CellPos(r, c) = btn.pos
       val value = gameState.board.getSquare(r, c)
-      
+
       // Update text
       btn.setValue(value)
-      
+
       // Reset colors (remove red/blue/highlight) so they don't stick around
       btn.getStyleClass.removeAll("btn-red", "btn-blue", "cell-highlight")
     }
@@ -849,7 +872,7 @@ class SudokuApp extends Application {
     val root = new VBox(20, title, msg, menuBtn, exitBtn)
     root.setPadding(new Insets(30))
     root.setAlignment(Pos.CENTER)
-    
+
     // Reusing existing CSS
     return finalizeScene(root)
   }

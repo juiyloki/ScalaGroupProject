@@ -1,20 +1,25 @@
+
 package logic
 
 import scala.util.Random
 import scala.annotation.tailrec
 
-class SudokuMaker(private val difficulty: Int, private val N: Int) {
+class SudokuMaker(val difficulty: Int, val N: Int, val boxHeight: Int, val boxWidth: Int) {
+
+  def this(difficulty: Int) = {
+    this(difficulty, 9, 3, 3)
+  }
 
   private val solver = new SudokuSolver
 
   /** Map difficulty to the number of empty spaces */
   private def emptySquaresForDifficulty: Int = difficulty match {
-    case 1 => 10  // very easy
-    case 2 => 25  // easy
-    case 3 => 35  // medium
-    case 4 => 45  // hard
-    case 5 => 55  // very hard
-    case _ => 35  // default medium
+    case 1 => (N * N * 0.12).toInt // very easy
+    case 2 => (N * N * 0.31).toInt // easy
+    case 3 => (N * N * 0.43).toInt // medium
+    case 4 => (N * N * 0.55).toInt // hard
+    case 5 => (N * N * 0.68).toInt // very hard
+    case _ => (N * N * 0.43).toInt // default medium
   }
 
   /** Generates board, subtracts toRemove numbers accoring to set difficulty */
@@ -28,7 +33,7 @@ class SudokuMaker(private val difficulty: Int, private val N: Int) {
    * Generates a completely filled, valid Sudoku board.
    */
   def randomValidBoardGenerator(): Board = {
-    solver.randomizedSolve(new Board(N)) match {
+    solver.randomizedSolve(new Board(N, boxHeight, boxWidth)) match {
       case Some(fullBoard) => fullBoard
       case None =>
         throw new RuntimeException("Failed to generate a full board.")

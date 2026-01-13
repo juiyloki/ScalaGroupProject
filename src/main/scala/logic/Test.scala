@@ -16,7 +16,7 @@ class Test {
     // Instantiate the maker for 9x9 boards (N=9).
     // The 'difficulty' param isn't used by your methods, so '1' is a placeholder.
     // The passed 'N' parameter is also unused, hardcoding to 9.
-    val maker = new SudokuMaker(difficulty = 1, N = 9)
+    val maker = new SudokuMaker(difficulty = 1)
 
     // List of puzzles to generate, specified by number of empty squares
     val emptySquareCounts = List(4, 6, 16, 20, 55)
@@ -46,13 +46,13 @@ class Test {
     }
 
     println(s"--- 🧩 Generating Puzzle with very easy difficulty ---")
-    val maker2  = new SudokuMaker(difficulty = 1, N = 9) // 1–easy, 3–medium, 5–hard
+    val maker2  = new SudokuMaker(difficulty = 1) // 1–easy, 3–medium, 5–hard
     val puzzle = maker2.generatePuzzle()
     puzzle.printBoard()
     println("----------------------------------\n")
 
     println(s"--- 🧩 Generating Puzzle with very hard difficulty ---")
-    val maker3  = new SudokuMaker(difficulty = 5, N = 9) // 1–easy, 3–medium, 5–hard
+    val maker3  = new SudokuMaker(difficulty = 5) // 1–easy, 3–medium, 5–hard
     val puzzle3 = maker3.generatePuzzle()
     puzzle3.printBoard()
     println("----------------------------------\n")

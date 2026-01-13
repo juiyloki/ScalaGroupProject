@@ -10,7 +10,16 @@ class SudokuGame(N: Int = 9) {
   /** Starts an interactive game session. */
   def run(): Unit = {
     println("=== Sudoku ===")
-    println("Select difficulty: 1 – easy, 3 – medium, 5 – hard")
+    println("Select size: 9 - standard 9x9 board, 6 – 6x6 board, 4 – 4x4 board")
+    val sizeInput = StdIn.readLine("Difficulty (9, 6, 4): ")
+
+    val s =
+      Option(sizeInput)
+        .flatMap(_.trim.toIntOption)
+        .filter(n => n == 9 || n == 6 || n == 4)
+        .getOrElse(9) // default
+
+    println("Select difficulty: 1 – very easy, 3 – medium, 5 – very hard")
     val diffInput = StdIn.readLine("Difficulty (1 - 5): ")
 
     val difficulty =
@@ -19,8 +28,15 @@ class SudokuGame(N: Int = 9) {
         .map(n => n.max(1).min(5))
         .getOrElse(3) // default
 
-    val maker = new SudokuMaker(difficulty, N)
-    println(s"Generating puzzle (difficulty = $difficulty)...")
+    val (bH, bW) = s match {
+      case 9 => (3, 3)
+      case 6 => (2, 3)
+      case 4 => (2, 2)
+      case _ => (3, 3)
+    }
+
+    val maker = new SudokuMaker(difficulty, s, bH, bW)
+    println(s"Generating puzzle (size = $s, difficulty = $difficulty)...")
 
     val puzzle: Board = maker.generatePuzzle()
     val current: Board = puzzle
@@ -78,9 +94,8 @@ class SudokuGame(N: Int = 9) {
                 val row = r - 1
                 val col = c - 1
 
-                if (row < 0 || row >= board.getSize || col < 0 || col >= board.getSize) {
-                  val temp = board.getSize
-                  println(s"Out of bounds (valid: 1–$temp).")
+                if (row < 0 || row >= board.boxHeight || col < 0 || col >= board.boxWidth) {
+                  println(s"Out of bounds (valid: 1–${board.N}).")
                 } else if (!board.isHidden(row, col)) {
                   println("Cannot modify this square (original puzzle value).")
                 } else if (!solver.isValid(board, row, col, v)) {

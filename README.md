@@ -70,29 +70,29 @@ Make sure to have **sbt** installed. You can find the official installation guid
 ## Screenshots
 
 ### Opening View
-<img src="https://github.com/user-attachments/assets/f50ccaf1-cb73-4cb8-a79b-b01c4979aa07" width="600" />
+<img width="712" height="790" alt="opening view" src="https://github.com/user-attachments/assets/ff05f633-ac12-4b20-a062-488f890545e1" />
 
 ---
 
 ### Rules Tab
-<img src="https://github.com/user-attachments/assets/6c577361-1857-4504-b6f6-08be6e26d716" width="600" />
+<img width="712" height="790" alt="rules tab" src="https://github.com/user-attachments/assets/5b71ed05-ca11-4c8d-8033-df3933445a08" />
 
 ---
 
 ### Gameplay
-<img src="https://github.com/user-attachments/assets/47f14d7e-1cb6-445f-b1b5-56b4bad3b28e" width="600" />
+<img width="712" height="790" alt="gameplay" src="https://github.com/user-attachments/assets/00d7be5e-280b-4311-8386-4f8a86df3154" />
 
 ---
 
 ## Highlighting Examples
 
 ### Highlighting All Equal Numbers
-<img src="https://github.com/user-attachments/assets/a33001ea-123c-406b-90c2-2d68552dbdb9" width="600" />
+<img width="712" height="790" src="https://github.com/user-attachments/assets/f29db201-6bdd-4cf4-8a54-1a84deddcd95" />
 
 ---
 
 ### Highlighting Row and Column
-<img src="https://github.com/user-attachments/assets/43a2a53a-1175-48a6-8b49-f0c879a2c880" width="600" />
+<img width="712" height="790" alt="Screenshot 2026-01-20 at 09 15 20" src="https://github.com/user-attachments/assets/46e414ac-f6f2-403e-8d1d-45b3d68114a5" />
 
 ---
 
@@ -100,6 +100,18 @@ Make sure to have **sbt** installed. You can find the official installation guid
 <img src="https://github.com/user-attachments/assets/e2f53520-ee14-484a-8c15-4f0c82f649ec" width="600" />
 
 ---
+
+### 6x6 mode
+<img width="712" height="790" alt="Screenshot 2026-01-20 at 09 15 55" src="https://github.com/user-attachments/assets/e2ef4305-b104-440a-85b1-2dff255d90f8" />
+
+---
+
+### Pink mode
+<img width="712" height="790" alt="Screenshot 2026-01-20 at 09 16 22" src="https://github.com/user-attachments/assets/7e77e998-f366-476c-b7c3-2a8dfe4f2e94" />
+
+---
+
+
 
 ## Winning Screen
 <img src="https://github.com/user-attachments/assets/bbb28c4b-32ac-4a08-9e54-3274072f5ff3" width="600" />
